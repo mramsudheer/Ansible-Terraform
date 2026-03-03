@@ -9,7 +9,10 @@ resource "aws_security_group" "this" {
         content {
           from_port = ingress.value.from_port
           to_port = ingress.value.to_port
-          protocol = "tcp"
+          #protocol = "tcp"
+          protocol = ingress.value.protocol
+          cidr_blocks = ingress.value.cidr_blocks
+          description = ingress.value.description
         }
     }
     # Standard Outbound to allow everything
@@ -18,7 +21,6 @@ resource "aws_security_group" "this" {
       to_port = 0
       protocol = "-1"
       cidr_blocks = ["0.0.0.0/0"]
-
     }
     tags = merge(var.common_tags,{
         Name = "${var.project_name}-${var.env}-${var.component_name}-sg"

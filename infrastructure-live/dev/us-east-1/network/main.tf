@@ -8,4 +8,5 @@ module "vpc" {
   public_cidrs  = var.public_cidrs
   private_cidrs = var.private_cidrs
   common_tags   = var.common_tags
+  azs           = var.azs
 }
