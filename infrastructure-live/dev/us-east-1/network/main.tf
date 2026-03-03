@@ -1,6 +1,6 @@
 module "vpc" {
   # Relative path to your module logic
-  source = "../../../terraform-modules/modules/aws-vpc"
+  source = "../../../../terraform-modules/modules/aws-vpc"
 
   # Passing values from variables (defined in your tfvars)
   project_name  = var.project_name
