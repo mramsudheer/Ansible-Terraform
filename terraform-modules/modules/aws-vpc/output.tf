@@ -9,7 +9,35 @@ output "public_subnet_ids" {
 output "private_subnet_ids" {
   value = aws_subnet.private[*].id
 }
-
+output "database_subnet_ids" {
+  value = aws_subnet.database[*].id
+}
 output "igw_id" {
   value = aws_internet_gateway.igw.id
+}
+output "nat_gateway_id" {
+  description = "NATGateway ID(If created)"
+  #value = aws_nat_gateway.main.id
+  value = join("", aws_nat_gateway.main[*].id)
+}
+output "nat_pubic_ip" {
+  value = join("", aws_nat_gateway.main[*].nat_pubic_ip)
+}
+output "nat_eip_allocation_id" { #Eg: eipalloc-0a1b2c3d4e
+  description = "The allocation ID of the Elastic IP"
+  value       = join("", aws_eip.nat[*].id)
+}
+output "nat_eip_public_ip" { #Eg: 54.1.2.3
+  description = "The public static IP address assigned to the NAT Gateway"
+  # This returns the IP if created, or an empty string if skipped.
+  value = join("", aws_eip.nat[*].public_ip)
+}
+output "project_name" {
+  value = var.project_name
+}
+output "environment" {
+  value = var.environment
+}
+output "common_tags" {
+  value = var.common_tags
 }
