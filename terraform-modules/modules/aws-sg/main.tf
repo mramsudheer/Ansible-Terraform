@@ -1,5 +1,6 @@
 resource "aws_security_group" "this" {
-  name        = "${var.project_name}-${var.env}-${var.component_name}-sg"
+  #name        = "${var.project_name}-${var.env}-${var.component_name}-sg"
+  name        = "${title(var.project_name)}-${title(var.env)}-${title(var.component_name)}-sg"
   description = "Security Group for ${var.component_name}"
   vpc_id      = var.vpc_id
 
@@ -26,6 +27,7 @@ resource "aws_security_group" "this" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags = merge(var.common_tags, {
-    Name = "${var.project_name}-${var.env}-${var.component_name}-sg"
+    #Name = "${var.project_name}-${var.env}-${var.component_name}-sg"
+    Name = "${title(var.project_name)}-${title(var.env)}-${title(var.component_name)}-sg" 
   })
 }

@@ -40,7 +40,8 @@ resource "aws_ssm_parameter" "sg_ids" {
   for_each = var.sg_map
 
   # This creates the "Box" in AWS Systems Manager
-  name  = "/${var.project_name}/${var.environment}/${each.key}/sg-id"
+  #name  = "/${var.project_name}/${var.environment}/${each.key}/sg-id"
+  name  = "/${title(var.project_name)}/${title(var.environment)}/${title(each.key)}_sg-id"
   type  = "String"
   value = each.value # This puts the 'sg-id' INSIDE the box
 }
