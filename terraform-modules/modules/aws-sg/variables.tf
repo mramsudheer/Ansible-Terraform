@@ -19,8 +19,8 @@ variable "vpc_id" {
 }
 
 variable "common_tags" {
-  type        = map(string)
-  default     = {}
+  type    = map(string)
+  default = {}
 }
 
 variable "sg_ingress_rules" {
@@ -28,8 +28,10 @@ variable "sg_ingress_rules" {
     from_port   = number
     to_port     = number
     protocol    = string
-    cidr_blocks = list(string)
-    description = string
+    # cidr_blocks = list(string)
+    # description = string
+    cidr_blocks                = optional(list(string))
+    source_security_group_id  = optional(list(string))
   }))
   description = "List of ingress rules for this specific component"
   default     = []

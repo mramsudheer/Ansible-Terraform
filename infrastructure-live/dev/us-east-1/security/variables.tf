@@ -5,8 +5,8 @@ variable "project_name" {
 variable "env" {
   type = string
 }
-variable "common_tags" { 
-  type = map(string) 
+variable "common_tags" {
+  type = map(string)
 }
 variable "security_configs" {
   type = map(object({

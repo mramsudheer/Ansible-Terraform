@@ -67,6 +67,7 @@ resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
+
 # Static IP
 resource "aws_eip" "nat" {
   count  = (var.nat_gateway_enable && var.static_ip == "") ? 1 : 0 #Executes only NATGateway is required

@@ -3,6 +3,6 @@ data "terraform_remote_state" "vpc" {
 
   config = {
     # Path to where your network/terraform.tfstate sits
-    path = "../../network/terraform.tfstate" 
+    path = "../network/terraform.tfstate"
   }
 }

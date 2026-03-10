@@ -36,4 +36,29 @@ resource "aws_ssm_parameter" "nat_eip" {
   type  = "String"
   value = var.nat_eip_public_ip
 }
+resource "aws_ssm_parameter" "sg_ids" {
+  for_each = var.sg_map
 
+  # This creates the "Box" in AWS Systems Manager
+  name  = "/${var.project_name}/${var.environment}/${each.key}/sg-id"
+  type  = "String"
+  value = each.value # This puts the 'sg-id' INSIDE the box
+}
+# data "aws_security_group" "selected" {
+#   count = length(var.sg_names)
+#   name  = var.sg_names[count.index]
+# }
+# resource "aws_ssm_parameter" "sg_id" {
+#   count = length(var.sg_names)
+#   name = "/${var.project_name}/${var.environment}_sg_id"
+#   type = "String"
+#   value = data.aws_security_group.selected[count.index].id 
+# }
+# resource "aws_ssm_parameter" "sg_ids" {
+#   count = length(var.sg_ids)
+
+#   # unique name for each: e.g. /proj/dev/sg-0, /proj/dev/sg-1
+#   name  = "/${var.project_name}/${var.environment}/sg-${count.index}"
+#   type  = "String"
+#   value = var.sg_ids[count.index]
+# }
