@@ -4,7 +4,6 @@ variable "ami_id" {
 }
 variable "instance_type" {
   type = string
-  default = "t3.micro"
   description = "please provide your instance type"
 }
 variable "subnet_id" {

@@ -1,3 +1,4 @@
+# Fetch VPC and Subnet IDs from the Network State File
 data "terraform_remote_state" "vpc" {
   backend = "local"
 
