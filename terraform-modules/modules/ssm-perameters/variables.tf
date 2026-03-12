@@ -35,5 +35,6 @@ variable "nat_eip_public_ip" {
 # }
 variable "sg_map" {
   type        = map(string)
+  default = {}
   description = "KEY is the Custom Name (e.g. backend-1), VALUE is the SG ID (e.g. sg-123)"
 }

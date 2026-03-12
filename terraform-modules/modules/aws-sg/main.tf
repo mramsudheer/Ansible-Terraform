@@ -13,7 +13,7 @@ resource "aws_security_group" "this" {
       #protocol = "tcp"
       protocol    = ingress.value.protocol
       # cidr_blocks = ingress.value.cidr_blocks
-      # description = ingress.value.description
+      description = ingress.value.description
        # Logic: If cidr_blocks is provided, use it. If not, use security_groups.
       cidr_blocks      = lookup(ingress.value, "cidr_blocks", null)
       security_groups  = lookup(ingress.value, "source_security_group_id", null)

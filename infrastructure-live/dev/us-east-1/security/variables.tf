@@ -8,6 +8,9 @@ variable "env" {
 variable "common_tags" {
   type = map(string)
 }
+# variable "component_name" {
+#   type = string  
+# }
 variable "security_configs" {
   type = map(object({
     ingress_rules = list(object({
@@ -16,6 +19,7 @@ variable "security_configs" {
       protocol    = string
       cidr_blocks = list(string)
       description = string
+      source_type = optional(string)
     }))
   }))
 }

@@ -5,3 +5,4 @@ common_tags = {
   Terraform   = "true"
   component   = "networking"
 }
+instance_type = "t3.micro"

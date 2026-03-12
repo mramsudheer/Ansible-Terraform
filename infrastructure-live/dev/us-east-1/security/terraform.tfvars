@@ -9,14 +9,30 @@ security_configs = {
   # 1. Database Layer
   mongodb = {
     ingress_rules = [{
-      cidr_blocks = ["10.0.0.0/16"] # Only allow traffic from within VPC
-      description = "Allow MongoDB port"
+      cidr_blocks = null # Logic in main.tf will swap this for Catalogue/User IDs
+      #ALLOW ONLY CATALOGUE
+      #source_security_group_id = [module.security_groups["catalogue"].sg_id]
+      source_type = "FROM_CATALOGUE"
+      description = "Allow MongoDB from Catalogue"
       from_port   = 27017
       protocol    = "tcp"
       to_port     = 27017
       },
       {
-        cidr_blocks = ["10.0.0.0/16"]
+      cidr_blocks = null # Logic in main.tf will swap this for Catalogue/User IDs
+      #ALLOW ONLY CATALOGUE
+      #source_security_group_id = [module.security_groups["catalogue"].sg_id]
+      source_type = "FROM_USER"
+      description = "Allow MongoDB from User"
+      from_port   = 27017
+      protocol    = "tcp"
+      to_port     = 27017
+      },
+      {
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        #ALLOW ONLY BASTION
+        #source_security_group_id = [module.bastion_sg.sg_id]
+        source_type = "SSH from Bastion"
         description = "SSH from Bastion"
         from_port   = 22
         protocol    = "tcp"
@@ -26,14 +42,16 @@ security_configs = {
   }
   mysql = {
     ingress_rules = [{
-      cidr_blocks = ["10.0.0.0/16"] # Only allow traffic from within VPC
+      cidr_blocks = null # Logic in main.tf will swap this for shipping ID
+      source_type = "Allow MSQL port"
       description = "Allow MSQL port"
       from_port   = 3306
       protocol    = "tcp"
       to_port     = 3306
       },
       {
-        cidr_blocks = ["10.0.0.0/16"]
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
         description = "SSH from Bastion"
         from_port   = 22
         protocol    = "tcp"
@@ -43,14 +61,16 @@ security_configs = {
   }
   redis = {
     ingress_rules = [{
-      cidr_blocks = ["10.0.0.0/16"]
+      cidr_blocks = null # Logic in main.tf will swap this for User and Cart IDs
+      source_type = "Allow REDIS port"
       description = "Allow REDIS port"
       from_port   = 6379
       protocol    = "tcp"
       to_port     = 6379
       },
       {
-        cidr_blocks = ["10.0.0.0/16"]
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
         description = "SSH from Bastion"
         from_port   = 22
         protocol    = "tcp"
@@ -60,14 +80,16 @@ security_configs = {
   }
   rabbitmq = {
     ingress_rules = [{
-      cidr_blocks = ["10.0.0.0/16"]
+      cidr_blocks = null # Logic in main.tf will swap this for Payment ID
+      source_type = "Allow Rabbitmq port"
       description = "Allow Rabbitmq port"
       from_port   = 5672
       protocol    = "tcp"
       to_port     = 5672
       },
       {
-        cidr_blocks = ["10.0.0.0/16"]
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
         description = "SSH from Bastion"
         from_port   = 22
         protocol    = "tcp"
@@ -79,13 +101,15 @@ security_configs = {
   catalogue = {
     ingress_rules = [{
       cidr_blocks = ["10.0.0.0/16"]
+      source_type = "Catalogue access"
       description = "Catalogue access"
       from_port   = 8080
       protocol    = "tcp"
       to_port     = 8080
       },
       {
-        cidr_blocks = ["10.0.0.0/16"]
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
         description = "SSH from Bastion"
         from_port   = 22
         protocol    = "tcp"
@@ -95,14 +119,16 @@ security_configs = {
   }
   user = {
     ingress_rules = [{
-      cidr_blocks = ["10.0.0.0/16"]
+      cidr_blocks = null
+      source_type = "User Access"
       description = "User Access"
       from_port   = 8080
       protocol    = "tcp"
       to_port     = 8080
       },
       {
-        cidr_blocks = ["10.0.0.0/16"]
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
         description = "SSH from Bastion"
         from_port   = 22
         protocol    = "tcp"
@@ -116,10 +142,12 @@ security_configs = {
       to_port     = 80
       protocol    = "tcp"
       cidr_blocks = ["10.0.0.0/16"] # Public access
+      source_type = "Allow HTTP"
       description = "Allow HTTP"
       },
       {
-        cidr_blocks = ["10.0.0.0/16"]
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
         description = "SSH from Bastion"
         from_port   = 22
         protocol    = "tcp"
@@ -131,6 +159,7 @@ security_configs = {
     ingress_rules = [{
       #cidr_blocks = ["125.22.115.152/32"] # your IP
       cidr_blocks = ["0.0.0.0/0"] # your IP
+      source_type = "SSH from My Home"
       description = "SSH from My Home"
       from_port   = 22
       protocol    = "tcp"
