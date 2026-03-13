@@ -1,7 +1,7 @@
 # 1. TIER 1: BASTION (No dependencies on other SGs)
 module "bastion_sg" {
-  source = "../../../../terraform-modules/modules/aws-sg"
-
+  #source = "../../../../terraform-modules/modules/aws-sg"
+   source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
@@ -16,8 +16,8 @@ module "app_security_groups" {
   # Only loop through apps that don't depend on other internal SGs
   for_each = { for k, v in var.security_configs : k => v if k == "catalogue" || k == "user" || k == "frontend" || k == "shipping" || k == "payment" || k == "cart" }
 
-  source = "../../../../terraform-modules/modules/aws-sg"
-
+  #source = "../../../../terraform-modules/modules/aws-sg"
+   source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
@@ -39,8 +39,8 @@ module "db_security_groups" {
   # Only loop through DBs that need IDs from Tier 2
   for_each = { for k, v in var.security_configs : k => v if k == "mongodb" || k == "mysql" || k == "redis" || k == "rabbitmq" }
 
-  source = "../../../../terraform-modules/modules/aws-sg"
-
+  #source = "../../../../terraform-modules/modules/aws-sg"
+   source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
