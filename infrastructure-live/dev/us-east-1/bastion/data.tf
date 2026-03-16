@@ -20,12 +20,21 @@ data "aws_ssm_parameter" "public_subnet_ids" {
 data "aws_ssm_parameter" "bastion_sg_id" {
   name = "/${title(var.project_name)}/${title(var.env)}/Bastion_sg-id"
 }
-data "aws_ami" "joindevops" {
-  most_recent = true
-  owners      = ["973714476881"]
+# data "aws_ami" "joindevops" {
+#   most_recent = true
+#   owners      = ["973714476881"]
 
+#   filter {
+#     name   = "name"
+#     values = ["Redhat-9-DevOps-Practice"]
+#   }
+# }
+data "aws_ami" "custom_ami" {
+  most_recent = true
+  owners = [var.owner_id]
+  
   filter {
-    name   = "name"
-    values = ["Redhat-9-DevOps-Practice"]
-  }
+    name = "name"
+    values = [var.ami_name]
+   }
 }

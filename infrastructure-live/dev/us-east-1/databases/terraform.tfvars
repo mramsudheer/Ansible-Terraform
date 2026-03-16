@@ -10,3 +10,5 @@ ami_id = "ami-0220d79f3f480ecf5" # Redhat-9-DevOps-Practice
 instance_type = "t3.micro"
 owner_id = "973714476881"
 ami_name = "Redhat-9-DevOps-Practice"
+hosted_zone_id = "Z0966494EBSLUZZZRGB4"
+hosted_zone_name = "intellifind.store"

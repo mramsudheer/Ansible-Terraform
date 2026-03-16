@@ -1,0 +1,8 @@
+resource "aws_instance" "mongodb_instance" {
+  ami           = data.aws_ami.custom_ami.id
+  instance_type = var.instance_type
+  subnet_id     = split(",", data.aws_ssm_parameter.database_subnet_ids.value)[0]
+  security_groups = [
+    data.aws_ssm_parameter.mongodb_sg_id.value
+  ]
+}

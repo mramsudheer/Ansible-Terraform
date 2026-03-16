@@ -1,5 +1,5 @@
 resource "aws_instance" "bastion" {
-  ami           = data.aws_ami.joindevops.id
+  ami           = data.aws_ami.custom_ami.id
   instance_type = var.instance_type
 
   subnet_id              = split(",", data.aws_ssm_parameter.public_subnet_ids.value)[0]
