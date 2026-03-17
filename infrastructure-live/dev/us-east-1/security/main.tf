@@ -1,7 +1,7 @@
 # 1. TIER 1: BASTION (No dependencies on other SGs)
 module "bastion_sg" {
   #source = "../../../../terraform-modules/modules/aws-sg"
-  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
@@ -12,7 +12,7 @@ module "bastion_sg" {
 }
 # 2. Create the Frontend SG separately
 module "frontend_sg" {
-   source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
+   source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
@@ -29,7 +29,7 @@ module "app_security_groups" {
   for_each = { for k, v in var.security_configs : k => v 
                if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
 
-  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
