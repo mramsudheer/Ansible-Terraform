@@ -41,3 +41,15 @@ output "environment" {
 output "common_tags" {
   value = var.common_tags
 }
+output "public_subnet_cidr_blocks" {
+  description = "List of CIDR blocks of the public subnets"
+  value       = aws_subnet.public[*].cidr_block
+}
+output "private_subnet_cidr_blocks" {
+  description = "List of CIDR blocks of the private subnets"
+  value       = aws_subnet.private[*].cidr_block
+}
+output "database_subnet_cidr_blocks" {
+  description = "List of CIDR blocks of the database subnets"
+  value       = aws_subnet.database[*].cidr_block
+}
