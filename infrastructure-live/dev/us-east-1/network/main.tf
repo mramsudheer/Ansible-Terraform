@@ -1,7 +1,7 @@
 module "vpc" {
   # Relative path to your module logic
   #source = "../../../../terraform-modules/modules/aws-vpc"
-   source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-vpc?ref=v0.2.0"
+  source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-vpc?ref=v0.3.0"
   # Passing values from variables (defined in your tfvars)
 
   vpc_cidr              = var.vpc_cidr

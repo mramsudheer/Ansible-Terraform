@@ -1,46 +1,96 @@
 # 1. TIER 1: BASTION (No dependencies on other SGs)
 module "bastion_sg" {
   #source = "../../../../terraform-modules/modules/aws-sg"
-   source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
   component_name = "bastion"
   #vpc_id         = data.terraform_remote_state.vpc.outputs.vpc_id # Use remote state for the first call
-  vpc_id = data.aws_ssm_parameter.vpc_id.value
+  vpc_id           = data.aws_ssm_parameter.vpc_id.value
   sg_ingress_rules = var.security_configs["bastion"].ingress_rules
 }
+# 2. Create the Frontend SG separately
+module "frontend_sg" {
+   source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
+  project_name   = var.project_name
+  env            = var.env
+  common_tags    = var.common_tags
+  component_name = "frontend"
+  vpc_id         = data.aws_ssm_parameter.vpc_id.value
+  
+  # Frontend usually just needs HTTP/HTTPS and SSH from Bastion
+  sg_ingress_rules = var.security_configs["frontend"].ingress_rules 
+}
+# 3. TIER 2: APP SERVERS (Depends only on Bastion)
 
-# 2. TIER 2: APP SERVERS (Depends only on Bastion)
 module "app_security_groups" {
-  # Only loop through apps that don't depend on other internal SGs
-  for_each = { for k, v in var.security_configs : k => v if k == "catalogue" || k == "user" || k == "frontend" || k == "shipping" || k == "payment" || k == "cart" }
+  # FIX 1: Remove "frontend" from this if condition
+  for_each = { for k, v in var.security_configs : k => v 
+               if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
 
-  #source = "../../../../terraform-modules/modules/aws-sg"
-   source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
   component_name = each.key
-  #vpc_id         = data.terraform_remote_state.vpc.outputs.vpc_id
-  vpc_id = data.aws_ssm_parameter.vpc_id.value
+  vpc_id         = data.aws_ssm_parameter.vpc_id.value
 
   sg_ingress_rules = [
-    for rule in each.value.ingress_rules : merge(rule, {
-      # If source_type is "SSH from Bastion", use the Bastion ID
-      source_security_group_id = rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : []
-      cidr_blocks              = rule.source_type == "SSH from Bastion" ? null : rule.cidr_blocks
-    })
-  ]
+  for rule in each.value.ingress_rules : merge(rule, {
+    source_security_group_id = concat(
+      # Only add Bastion if specifically requested
+      rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : [],
+      rule.source_type == "Allow Frontend" ? [module.frontend_sg.sg_id] : [],
+      # FIX: Only add Frontend SG if this is NOT an SSH rule 
+      # and NOT the frontend itself
+      (rule.source_type != "SSH from Bastion" && each.key != "Allow Frontend") ? [module.frontend_sg.sg_id] : []
+    )
+    
+    # Ensure CIDR is null if we added a Security Group ID
+    cidr_blocks = (rule.source_type == "SSH from Bastion" || each.key != "Allow Frontend") ? null : rule.cidr_blocks
+  })
+]
+
 }
 
-# 3. TIER 3: DATABASES (Depends on Apps and Bastion)
+# module "app_security_groups" {
+#   # Only loop through apps that don't depend on other internal SGs
+#   for_each = { for k, v in var.security_configs : k => v if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
+
+#   #source = "../../../../terraform-modules/modules/aws-sg"
+#   source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
+#   project_name   = var.project_name
+#   env            = var.env
+#   common_tags    = var.common_tags
+#   component_name = each.key
+#   #vpc_id         = data.terraform_remote_state.vpc.outputs.vpc_id
+#   vpc_id = data.aws_ssm_parameter.vpc_id.value
+
+#   sg_ingress_rules = [
+#     for rule in each.value.ingress_rules : merge(rule, {
+#       # If source_type is "SSH from Bastion", use the Bastion ID
+#       #source_security_group_id = rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : []
+
+#       # This combines the Bastion logic with the Frontend SG
+#       source_security_group_id = concat(
+#         rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : [],
+#         # IMPORTANT: Only add Frontend SG to OTHER apps to avoid circular dependency
+#         each.key != "frontend" ? [module.app_security_groups["frontend"].sg_id] : []
+#       )
+#       # If we use a Security Group, we MUST set cidr_blocks to null
+#       cidr_blocks = rule.source_type == "SSH from Bastion" ? null : rule.cidr_blocks
+#     })
+#   ]
+# }
+
+# 4. TIER 3: DATABASES (Depends on Apps and Bastion)
 module "db_security_groups" {
   # Only loop through DBs that need IDs from Tier 2
   for_each = { for k, v in var.security_configs : k => v if k == "mongodb" || k == "mysql" || k == "redis" || k == "rabbitmq" }
 
   #source = "../../../../terraform-modules/modules/aws-sg"
-   source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
@@ -60,17 +110,20 @@ module "db_security_groups" {
       #   ] : []
       # )
       source_security_group_id = rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : (
-                                 rule.source_type == "FROM_CATALOGUE"    ? [module.app_security_groups["catalogue"].sg_id] :
-                                 rule.source_type == "FROM_USER"         ? [module.app_security_groups["user"].sg_id] : 
-                                 []
-                               )
+        rule.source_type == "FROM_CATALOGUE" ? [module.app_security_groups["catalogue"].sg_id] :
+        rule.source_type == "FROM_USER" ? [module.app_security_groups["user"].sg_id] :
+        rule.source_type == "FROM_CART" ? [module.app_security_groups["cart"].sg_id] :
+        rule.source_type == "FROM_SHIPPING" ? [module.app_security_groups["shipping"].sg_id] :
+        rule.source_type == "FROM_PAYMENT" ? [module.app_security_groups["payment"].sg_id] :
+        []
+      )
       description = rule.description
       cidr_blocks = rule.source_type != null ? null : rule.cidr_blocks
     })
   ]
 }
 
-# 4. STORE EVERYTHING IN SSM
+# 5. STORE EVERYTHING IN SSM
 module "ssm" {
   source       = "../../../../terraform-modules/modules/ssm-perameters"
   project_name = var.project_name
@@ -78,13 +131,13 @@ module "ssm" {
 
   # Use .value directly (don't split here, keep the whole string/list)
   vpc_id              = data.aws_ssm_parameter.vpc_id.value
-  public_subnet_ids   = split(",",data.aws_ssm_parameter.public_subnet_ids.value)
-  private_subnet_ids  = split(",",data.aws_ssm_parameter.private_subnet_ids.value)
-  database_subnet_ids = split(",",data.aws_ssm_parameter.database_subnet_ids.value)
-  
+  public_subnet_ids   = split(",", data.aws_ssm_parameter.public_subnet_ids.value)
+  private_subnet_ids  = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
+  database_subnet_ids = split(",", data.aws_ssm_parameter.database_subnet_ids.value)
+
   #igw_id              = data.aws_ssm_parameter.igw_id.value
   #nat_eip_public_ip   = data.aws_ssm_parameter.nat_eip_public_ip.value
-  
+
   # ERROR FIX: Changed .id to .value
   #nat_gateway_id      = data.aws_ssm_parameter.nat_gateway_id.value
 
@@ -98,6 +151,7 @@ module "ssm" {
   # Combine all 3 modules into one map
   sg_map = merge(
     { "bastion" = module.bastion_sg.sg_id },
+    { "frontend" = module.frontend_sg.sg_id },
     { for name, instance in module.app_security_groups : name => instance.sg_id },
     { for name, instance in module.db_security_groups : name => instance.sg_id }
   )

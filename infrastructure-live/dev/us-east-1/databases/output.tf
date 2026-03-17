@@ -15,3 +15,8 @@ output "mongodb_security_group" {
   value = nonsensitive(tolist(aws_instance.mongodb_instance.vpc_security_group_ids)[0])
   description = "mongodb Security Group"
 }
+output "mongodb_r53_record" {
+  value = aws_route53_record.mongodb_r53.name
+  description = "mongodb Route53 Record"
+  
+}

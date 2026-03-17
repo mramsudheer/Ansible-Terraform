@@ -19,14 +19,14 @@ security_configs = {
       to_port     = 27017
       },
       {
-      cidr_blocks = null # Logic in main.tf will swap this for Catalogue/User IDs
-      #ALLOW ONLY CATALOGUE
-      #source_security_group_id = [module.security_groups["catalogue"].sg_id]
-      source_type = "FROM_USER"
-      description = "Allow MongoDB from User"
-      from_port   = 27017
-      protocol    = "tcp"
-      to_port     = 27017
+        cidr_blocks = null # Logic in main.tf will swap this for Catalogue/User IDs
+        #ALLOW ONLY CATALOGUE
+        #source_security_group_id = [module.security_groups["catalogue"].sg_id]
+        source_type = "FROM_USER"
+        description = "Allow MongoDB from User"
+        from_port   = 27017
+        protocol    = "tcp"
+        to_port     = 27017
       },
       {
         cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
@@ -40,11 +40,46 @@ security_configs = {
 
     }]
   }
+  redis = {
+    ingress_rules = [{
+      cidr_blocks = null # Logic in main.tf will swap this for User and Cart IDs
+      source_type = "FROM_CATALOGUE"
+      description = "Allow Redis from Catalogue"
+      from_port   = 6379
+      protocol    = "tcp"
+      to_port     = 6379
+      },
+      {
+        cidr_blocks = null # Logic in main.tf will swap this for User and Cart IDs
+        source_type = "FROM_USER"
+        description = "Allow Redis from User"
+        from_port   = 6379
+        protocol    = "tcp"
+        to_port     = 6379
+      },
+      {
+        cidr_blocks = null # Logic in main.tf will swap this for User and Cart IDs
+        source_type = "FROM_CART"
+        description = "Allow Redis from Cart"
+        from_port   = 6379
+        protocol    = "tcp"
+        to_port     = 6379
+      },
+      {
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
+        description = "SSH from Bastion"
+        from_port   = 22
+        protocol    = "tcp"
+        to_port     = 22
+
+    }]
+  }
   mysql = {
     ingress_rules = [{
       cidr_blocks = null # Logic in main.tf will swap this for shipping ID
-      source_type = "Allow MSQL port"
-      description = "Allow MSQL port"
+      source_type = "FROM_SHIPPING"
+      description = "Allow MySQL from Shipping"
       from_port   = 3306
       protocol    = "tcp"
       to_port     = 3306
@@ -59,30 +94,11 @@ security_configs = {
 
     }]
   }
-  redis = {
-    ingress_rules = [{
-      cidr_blocks = null # Logic in main.tf will swap this for User and Cart IDs
-      source_type = "Allow REDIS port"
-      description = "Allow REDIS port"
-      from_port   = 6379
-      protocol    = "tcp"
-      to_port     = 6379
-      },
-      {
-        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
-        source_type = "SSH from Bastion"
-        description = "SSH from Bastion"
-        from_port   = 22
-        protocol    = "tcp"
-        to_port     = 22
-
-    }]
-  }
   rabbitmq = {
     ingress_rules = [{
       cidr_blocks = null # Logic in main.tf will swap this for Payment ID
-      source_type = "Allow Rabbitmq port"
-      description = "Allow Rabbitmq port"
+      source_type = "FROM_PAYMENT"
+      description = "Allow Rabbitmq from Payment"
       from_port   = 5672
       protocol    = "tcp"
       to_port     = 5672
@@ -100,9 +116,10 @@ security_configs = {
   # 2. Application Layer
   catalogue = {
     ingress_rules = [{
-      cidr_blocks = ["10.0.0.0/16"]
-      source_type = "Catalogue access"
-      description = "Catalogue access"
+      #cidr_blocks = ["10.0.0.0/16"]
+      cidr_blocks = null
+      source_type = "Allow Frontend"
+      description = "Allow Frontend SG"
       from_port   = 8080
       protocol    = "tcp"
       to_port     = 8080
@@ -119,9 +136,70 @@ security_configs = {
   }
   user = {
     ingress_rules = [{
+      #cidr_blocks = ["10.0.0.0/16"]
       cidr_blocks = null
-      source_type = "User Access"
-      description = "User Access"
+      source_type = "Allow Frontend"
+      description = "Allow Frontend SG"
+      from_port   = 8080
+      protocol    = "tcp"
+      to_port     = 8080
+      },
+      {
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
+        description = "SSH from Bastion"
+        from_port   = 22
+        protocol    = "tcp"
+        to_port     = 22
+
+    }]
+  }
+  cart = {
+    ingress_rules = [{
+      #cidr_blocks = ["10.0.0.0/16"]
+      cidr_blocks = null
+      source_type = "Allow Frontend"
+      description = "Allow Frontend SG"
+      from_port   = 8080
+      protocol    = "tcp"
+      to_port     = 8080
+      },
+      {
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
+        description = "SSH from Bastion"
+        from_port   = 22
+        protocol    = "tcp"
+        to_port     = 22
+
+    }]
+  }
+  shipping = {
+    ingress_rules = [{
+      #cidr_blocks = ["10.0.0.0/16"]
+      cidr_blocks = null
+      source_type = "Allow Frontend"
+      description = "Allow Frontend SG"
+      from_port   = 8080
+      protocol    = "tcp"
+      to_port     = 8080
+      },
+      {
+        cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
+        source_type = "SSH from Bastion"
+        description = "SSH from Bastion"
+        from_port   = 22
+        protocol    = "tcp"
+        to_port     = 22
+
+    }]
+  }
+  payment = {
+    ingress_rules = [{
+      #cidr_blocks = ["10.0.0.0/16"]
+      cidr_blocks = null
+      source_type = "Allow Frontend"
+      description = "Allow Frontend SG"
       from_port   = 8080
       protocol    = "tcp"
       to_port     = 8080

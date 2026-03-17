@@ -30,3 +30,6 @@ variable "hosted_zone_id" {
 variable "hosted_zone_name" {
   type = string
 }
+variable "domain_name" {
+    type = string
+}

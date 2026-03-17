@@ -4,6 +4,7 @@ output "security_group_ids" {
   #value = { for name, instance in module.security_groups : name => instance.sg_id }
   value = merge(
     { "bastion" = module.bastion_sg.sg_id },
+    { "frontend" = module.frontend_sg.sg_id },
     { for name, instance in module.app_security_groups : name => instance.sg_id },
     { for name, instance in module.db_security_groups : name => instance.sg_id }
   )

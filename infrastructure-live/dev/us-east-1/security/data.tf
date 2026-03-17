@@ -51,7 +51,7 @@ data "aws_nat_gateway" "selected" {
   id    = data.aws_nat_gateways.all.ids[0]
 }
 # data "aws_ssm_parameter" "igw_id" {
-  
+
 #   name = "/${title(var.project_name)}/${title(var.env)}/vpc/igw_id"
 # }
 # data "aws_ssm_parameter" "nat_eip_public_ip" {
