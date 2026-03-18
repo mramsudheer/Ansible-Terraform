@@ -7,8 +7,8 @@ private_subnet_cidrs  = ["10.0.11.0/24", "10.0.12.0/24"]
 database_subnet_cidrs = ["10.0.21.0/24", "10.0.22.0/24"]
 
 azs                = ["us-east-1a", "us-east-1b"]
-nat_gateway_enable = false
-static_ip          = false
+nat_gateway_enable = true
+static_ip          = ""
 environment        = "dev"
 
 project_name = "Roboshop"

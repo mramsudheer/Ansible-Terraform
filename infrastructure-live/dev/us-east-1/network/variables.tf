@@ -17,7 +17,7 @@ variable "nat_gateway_enable" {
   type = bool
 }
 variable "static_ip" {
-  type = bool
+  type = string
 }
 variable "project_name" {
   type = string
