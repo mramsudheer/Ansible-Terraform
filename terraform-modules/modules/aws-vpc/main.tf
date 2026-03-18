@@ -79,6 +79,10 @@ resource "aws_nat_gateway" "main" {
   count = var.nat_gateway_enable ? 1 : 0
   #allocation_id = aws_eip.nat.id
   allocation_id = var.static_ip != "" ? var.static_ip : aws_eip.nat[0].id
+  # Logic: 
+  # 1. If var.static_ip is a real ID (starts with eipalloc), use it.
+  # Otherwise, use the EIP created by the module.
+  #allocation_id = can(regex("^eipalloc-", var.static_ip)) ? var.static_ip : aws_eip.nat[0].id
   subnet_id     = aws_subnet.public[0].id # NAT must sit in a Public Subnet
   tags          = merge(var.common_tags, { Name = "${var.project_name}-${var.environment}-nat" })
 

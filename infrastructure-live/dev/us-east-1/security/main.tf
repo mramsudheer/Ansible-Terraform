@@ -12,22 +12,22 @@ module "bastion_sg" {
 }
 # 2. Create the Frontend SG separately
 module "frontend_sg" {
-   source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
   component_name = "frontend"
   vpc_id         = data.aws_ssm_parameter.vpc_id.value
-  
+
   # Frontend usually just needs HTTP/HTTPS and SSH from Bastion
-  sg_ingress_rules = var.security_configs["frontend"].ingress_rules 
+  sg_ingress_rules = var.security_configs["frontend"].ingress_rules
 }
 # 3. TIER 2: APP SERVERS (Depends only on Bastion)
 
 module "app_security_groups" {
   # FIX 1: Remove "frontend" from this if condition
-  for_each = { for k, v in var.security_configs : k => v 
-               if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" || k == "backend_alb"}
+  for_each = { for k, v in var.security_configs : k => v
+  if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" || k == "backend_alb" }
 
   source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
   project_name   = var.project_name
@@ -37,20 +37,20 @@ module "app_security_groups" {
   vpc_id         = data.aws_ssm_parameter.vpc_id.value
 
   sg_ingress_rules = [
-  for rule in each.value.ingress_rules : merge(rule, {
-    source_security_group_id = concat(
-      # Only add Bastion if specifically requested
-      rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : [],
-      rule.source_type == "Allow Frontend" ? [module.frontend_sg.sg_id] : [],
-      # FIX: Only add Frontend SG if this is NOT an SSH rule 
-      # and NOT the frontend itself
-      (rule.source_type != "SSH from Bastion" && each.key != "Allow Frontend") ? [module.frontend_sg.sg_id] : []
-    )
-    
-    # Ensure CIDR is null if we added a Security Group ID
-    cidr_blocks = (rule.source_type == "SSH from Bastion" || each.key != "Allow Frontend") ? null : rule.cidr_blocks
-  })
-]
+    for rule in each.value.ingress_rules : merge(rule, {
+      source_security_group_id = concat(
+        # Only add Bastion if specifically requested
+        rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : [],
+        rule.source_type == "Allow Frontend" ? [module.frontend_sg.sg_id] : [],
+        # FIX: Only add Frontend SG if this is NOT an SSH rule 
+        # and NOT the frontend itself
+        (rule.source_type != "SSH from Bastion" && each.key != "Allow Frontend") ? [module.frontend_sg.sg_id] : []
+      )
+
+      # Ensure CIDR is null if we added a Security Group ID
+      cidr_blocks = (rule.source_type == "SSH from Bastion" || each.key != "Allow Frontend") ? null : rule.cidr_blocks
+    })
+  ]
 
 }
 

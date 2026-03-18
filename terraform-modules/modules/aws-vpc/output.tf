@@ -21,7 +21,7 @@ output "nat_gateway_id" {
   value = join("", aws_nat_gateway.main[*].id)
 }
 output "nat_pubic_ip" {
-  value = join("", aws_nat_gateway.main[*].nat_pubic_ip)
+  value = join("", aws_nat_gateway.main[*].public_ip)
 }
 output "nat_eip_allocation_id" { #Eg: eipalloc-0a1b2c3d4e
   description = "The allocation ID of the Elastic IP"

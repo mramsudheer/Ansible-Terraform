@@ -1,15 +1,15 @@
 variable "project_name" {
-  type = string
+  type        = string
   description = "Project Name"
 }
 variable "env" {
   type = string
 }
 variable "instance_type" {
-type = string
+  type = string
 }
 variable "common_tags" {
-  type = map(string)
+  type    = map(string)
   default = {}
 }
 variable "ami_id" {
@@ -31,5 +31,5 @@ variable "hosted_zone_name" {
   type = string
 }
 variable "domain_name" {
-    type = string
+  type = string
 }

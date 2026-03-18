@@ -31,10 +31,10 @@ data "aws_ssm_parameter" "bastion_sg_id" {
 # }
 data "aws_ami" "custom_ami" {
   most_recent = true
-  owners = [var.owner_id]
-  
+  owners      = [var.owner_id]
+
   filter {
-    name = "name"
+    name   = "name"
     values = [var.ami_name]
-   }
+  }
 }
