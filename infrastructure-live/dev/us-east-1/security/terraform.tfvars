@@ -244,4 +244,14 @@ security_configs = {
       to_port     = 22
     }]
   }
+  backend_alb = {
+    ingress_rules = [{
+      cidr_blocks = null
+      source_type = "SSH from Bastion"
+      description = "Allow Bastion SG"
+      from_port   = 80
+      protocol    = "tcp"
+      to_port     = 80
+    }]
+  }
 }

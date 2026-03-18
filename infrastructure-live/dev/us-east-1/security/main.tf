@@ -27,7 +27,7 @@ module "frontend_sg" {
 module "app_security_groups" {
   # FIX 1: Remove "frontend" from this if condition
   for_each = { for k, v in var.security_configs : k => v 
-               if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
+               if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" || k == "backend_alb"}
 
   source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
   project_name   = var.project_name
