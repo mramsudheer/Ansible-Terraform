@@ -22,12 +22,21 @@ module "frontend_sg" {
   # Frontend usually just needs HTTP/HTTPS and SSH from Bastion
   sg_ingress_rules = var.security_configs["frontend"].ingress_rules
 }
-# 3. TIER 2: APP SERVERS (Depends only on Bastion)
 
+# 3. TIER 2: APP SERVERS (Depends only on Bastion)
+# This module is a factory that creates multiple Security Groups (SGs) 
+# for application tier (Catalogue, User, etc.) and automatically 
+# wires up the connection between them and the Frontend or Bastion.
+
+# The Filter (for_each)
+# Instead of writing a module block for every single app, it uses a loop.
+# It looks at your security_configs map.
+# It filters it to only create SGs for the keys: catalogue, user, shipping, payment, and cart.
+# Everything else (like mongodb or bastion) is ignored by this specific block.
 module "app_security_groups" {
   # FIX 1: Remove "frontend" from this if condition
   for_each = { for k, v in var.security_configs : k => v
-  if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" || k == "backend_alb" }
+  if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
 
   source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
   project_name   = var.project_name
@@ -36,6 +45,14 @@ module "app_security_groups" {
   component_name = each.key
   vpc_id         = data.aws_ssm_parameter.vpc_id.value
 
+  # It takes the rules you defined in terraform.tfvars and replaces your labels 
+  # with real AWS IDs using concat(): 
+  #SSH Rule: If a rule says "SSH from Bastion", it grabs the ID from module.bastion_sg. 
+  # Web Traffic: If a rule says "Allow Frontend", it grabs the ID from module.frontend_sg.
+ # The "Safety Net" (The third line in concat): This logic ensures that if the rule is not 
+ # for SSH, it automatically allows traffic from the Frontend SG. 
+ # This is why your apps (like Catalogue) can talk to the Frontend without you hardcoding IDs.
+ # SECURITY GROUPS ARE CREATING IN sg_map IN SSM MODULE.
   sg_ingress_rules = [
     for rule in each.value.ingress_rules : merge(rule, {
       source_security_group_id = concat(
@@ -53,38 +70,7 @@ module "app_security_groups" {
   ]
 
 }
-
-# module "app_security_groups" {
-#   # Only loop through apps that don't depend on other internal SGs
-#   for_each = { for k, v in var.security_configs : k => v if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
-
-#   #source = "../../../../terraform-modules/modules/aws-sg"
-#   source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
-#   project_name   = var.project_name
-#   env            = var.env
-#   common_tags    = var.common_tags
-#   component_name = each.key
-#   #vpc_id         = data.terraform_remote_state.vpc.outputs.vpc_id
-#   vpc_id = data.aws_ssm_parameter.vpc_id.value
-
-#   sg_ingress_rules = [
-#     for rule in each.value.ingress_rules : merge(rule, {
-#       # If source_type is "SSH from Bastion", use the Bastion ID
-#       #source_security_group_id = rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : []
-
-#       # This combines the Bastion logic with the Frontend SG
-#       source_security_group_id = concat(
-#         rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : [],
-#         # IMPORTANT: Only add Frontend SG to OTHER apps to avoid circular dependency
-#         each.key != "frontend" ? [module.app_security_groups["frontend"].sg_id] : []
-#       )
-#       # If we use a Security Group, we MUST set cidr_blocks to null
-#       cidr_blocks = rule.source_type == "SSH from Bastion" ? null : rule.cidr_blocks
-#     })
-#   ]
-# }
-
-# 4. TIER 3: DATABASES (Depends on Apps and Bastion)
+# 4. TIER 4: DATABASES (Depends on Apps and Bastion)
 module "db_security_groups" {
   # Only loop through DBs that need IDs from Tier 2
   for_each = { for k, v in var.security_configs : k => v if k == "mongodb" || k == "mysql" || k == "redis" || k == "rabbitmq" }
@@ -98,17 +84,17 @@ module "db_security_groups" {
   #vpc_id         = data.terraform_remote_state.vpc.outputs.vpc_id
   vpc_id = data.aws_ssm_parameter.vpc_id.value
 
+  # The following code snippet uses a for expression to dynamically build a list of Security Group 
+  # ingress rules. It essentially acts as a "translator" that converts human-friendly labels 
+  # into actual AWS resource IDs.
+  # If source_type is "SSH from Bastion", it fetches the ID from the bastion module.
+  # If it's "FROM_CATALOGUE", "FROM_USER", etc., it looks up the corresponding ID in the app_security_groups map.
+  # If no match is found, it returns an empty list [].
+  # SECURITY GROUPS ARE CREATING IN sg_map IN SSM MODULE.
+
   sg_ingress_rules = [
     for rule in each.value.ingress_rules : merge(rule, {
-      # LOGIC:
-      # If SSH -> Bastion
-      # If MongoDB -> Catalogue + User
-      # source_security_group_id = rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : (
-      #   rule.source_type == "Allow MongoDB port" ? [
-      #     module.app_security_groups["catalogue"].sg_id,
-      #     module.app_security_groups["user"].sg_id
-      #   ] : []
-      # )
+      
       source_security_group_id = rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : (
         rule.source_type == "FROM_CATALOGUE" ? [module.app_security_groups["catalogue"].sg_id] :
         rule.source_type == "FROM_USER" ? [module.app_security_groups["user"].sg_id] :
@@ -135,12 +121,6 @@ module "ssm" {
   private_subnet_ids  = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
   database_subnet_ids = split(",", data.aws_ssm_parameter.database_subnet_ids.value)
 
-  #igw_id              = data.aws_ssm_parameter.igw_id.value
-  #nat_eip_public_ip   = data.aws_ssm_parameter.nat_eip_public_ip.value
-
-  # ERROR FIX: Changed .id to .value
-  #nat_gateway_id      = data.aws_ssm_parameter.nat_gateway_id.value
-
   # Use the ID from the IGW search
   igw_id = data.aws_internet_gateway.default.internet_gateway_id
   # Logic: If the list of NAT Gateways is not empty, take the first one. Otherwise, ""
@@ -148,7 +128,8 @@ module "ssm" {
   # If a NAT Gateway was found, get its public IP. Otherwise, send empty string.
   nat_eip_public_ip = length(data.aws_nat_gateways.all.ids) > 0 ? data.aws_nat_gateway.selected[0].public_ip : ""
 
-  # Combine all 3 modules into one map
+  # Combine all 3 modules into one map and stores in SSM. 
+  # SSM code(resource "aws_ssm_parameter" "sg_ids" {}) is in SSM-perameters module. 
   sg_map = merge(
     { "bastion" = module.bastion_sg.sg_id },
     { "frontend" = module.frontend_sg.sg_id },
@@ -156,30 +137,3 @@ module "ssm" {
     { for name, instance in module.db_security_groups : name => instance.sg_id }
   )
 }
-
-# module "ssm" {
-#   source       = "../../../../terraform-modules/modules/ssm-perameters"
-#   project_name = var.project_name
-#   environment  = var.env
-
-#   #vpc_id              = data.terraform_remote_state.vpc.outputs.vpc_id
-#   #public_subnet_ids   = data.terraform_remote_state.vpc.outputs.public_subnet_ids
-#   #private_subnet_ids  = data.terraform_remote_state.vpc.outputs.private_subnet_ids
-#   #database_subnet_ids = data.terraform_remote_state.vpc.outputs.database_subnet_ids
-#   #igw_id              = data.terraform_remote_state.vpc.outputs.igw_id
-#   #nat_eip_public_ip   = data.terraform_remote_state.vpc.outputs.nat_eip_public_ip
-#   #nat_gateway_id      = data.terraform_remote_state.vpc.outputs.nat_gateway_id
-#   vpc_id = data.aws_ssm_parameter.vpc_id.value
-#   public_subnet_ids =split(",", data.aws_ssm_parameter.public_subnet_ids.value)[0]
-#   private_subnet_ids = split(",",data.aws_ssm_parameter.private_subnet_ids.value)[0]
-#   database_subnet_ids = split(",",data.aws_ssm_parameter.database_subnet_ids.value)[0]
-#   igw_id = data.aws_ssm_parameter.igw_id.value
-#   nat_eip_public_ip = data.aws_ssm_parameter.nat_eip_public_ip.value
-#   nat_gateway_id = data.aws_ssm_parameter.nat_gateway_id.id
-#   # Combine all 3 modules into one map for SSM
-#   sg_map = merge(
-#     { "bastion" = module.bastion_sg.sg_id },
-#     { for name, instance in module.app_security_groups : name => instance.sg_id },
-#     { for name, instance in module.db_security_groups : name => instance.sg_id }
-#   )
-# }

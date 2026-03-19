@@ -30,3 +30,36 @@ resource "terraform_data" "mongodb" {
     ]
   }
 }
+
+# Resource for Redis EC2 instance and its dependencies
+resource "aws_instance" "redis_instance" {
+  ami           = data.aws_ami.custom_ami.id
+  instance_type = var.instance_type
+
+  subnet_id              = split(",", data.aws_ssm_parameter.database_subnet_ids.value)[0]
+  vpc_security_group_ids = [data.aws_ssm_parameter.redis_sg_id.value]
+
+  tags = merge(var.common_tags, {
+    Name = "${var.project_name}-${var.env}-redis"
+  })
+}
+resource "terraform_data" "redis" {
+  triggers_replace = [aws_instance.redis_instance.id]
+
+  connection {
+    type     = "ssh"
+    user     = "ec2-user"
+    password = "DevOps321"
+    host     = aws_instance.redis_instance.private_ip
+  }
+  provisioner "file" {
+    source      = "bootstrap.sh"      # Local file path
+    destination = "/tmp/bootstrap.sh" # Destination path on the remote machine
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/bootstrap.sh",
+      "sudo sh /tmp/bootstrap.sh redis ${var.env}"
+    ]
+  }
+}
