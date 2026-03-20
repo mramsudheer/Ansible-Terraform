@@ -33,3 +33,7 @@ variable "hosted_zone_id" {
 variable "domain_name" {
   type = string
 }
+variable "apps" {
+  type    = list(string)
+  default = ["catalogue", "user", "cart", "shipping", "payment"]
+}
