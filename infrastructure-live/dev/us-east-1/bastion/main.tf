@@ -6,7 +6,7 @@ resource "aws_instance" "bastion" {
   vpc_security_group_ids = [data.aws_ssm_parameter.bastion_sg_id.value]
 
   user_data = file("${path.module}/bastion_user_data.sh")
-  
+
   tags = merge(var.common_tags, {
     Name = "${var.project_name}-${var.env}-bastion"
   })

@@ -20,3 +20,9 @@ data "aws_ssm_parameter" "mongodb_sg_id" {
 data "aws_ssm_parameter" "redis_sg_id" {
   name = "/${title(var.project_name)}/${title(var.env)}/Redis_sg-id"
 }
+data "aws_ssm_parameter" "mysql_sg_id" {
+  name = "/${title(var.project_name)}/${title(var.env)}/Mysql_sg-id"
+}
+data "aws_ssm_parameter" "rabbitmq_sg_id" {
+  name = "/${title(var.project_name)}/${title(var.env)}/Rabbitmq_sg-id"
+}

@@ -20,7 +20,7 @@ output "nat_gateway_id" {
   #value = aws_nat_gateway.main.id
   value = join("", aws_nat_gateway.main[*].id)
 }
-output "nat_pubic_ip" {
+output "nat_public_ip" {
   value = join("", aws_nat_gateway.main[*].public_ip)
 }
 output "nat_eip_allocation_id" { #Eg: eipalloc-0a1b2c3d4e
