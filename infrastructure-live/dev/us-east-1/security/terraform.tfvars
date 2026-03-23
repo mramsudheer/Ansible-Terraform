@@ -118,8 +118,8 @@ security_configs = {
     ingress_rules = [{
       #cidr_blocks = ["10.0.0.0/16"]
       cidr_blocks = null
-      source_type = "Allow Frontend"
-      description = "Allow Frontend SG"
+      source_type = "BackEnd ALB"
+      description = "Allow BackEnd ALB SG"
       from_port   = 8080
       protocol    = "tcp"
       to_port     = 8080
@@ -138,8 +138,8 @@ security_configs = {
     ingress_rules = [{
       #cidr_blocks = ["10.0.0.0/16"]
       cidr_blocks = null
-      source_type = "Allow Frontend"
-      description = "Allow Frontend SG"
+      source_type = "BackEnd ALB"
+      description = "Allow BackEnd ALB SG"
       from_port   = 8080
       protocol    = "tcp"
       to_port     = 8080
@@ -158,8 +158,8 @@ security_configs = {
     ingress_rules = [{
       #cidr_blocks = ["10.0.0.0/16"]
       cidr_blocks = null
-      source_type = "Allow Frontend"
-      description = "Allow Frontend SG"
+      source_type = "BackEnd ALB"
+      description = "Allow BackEnd ALB SG"
       from_port   = 8080
       protocol    = "tcp"
       to_port     = 8080
@@ -178,8 +178,8 @@ security_configs = {
     ingress_rules = [{
       #cidr_blocks = ["10.0.0.0/16"]
       cidr_blocks = null
-      source_type = "Allow Frontend"
-      description = "Allow Frontend SG"
+      source_type = "BackEnd ALB"
+      description = "Allow BackEnd ALB SG"
       from_port   = 8080
       protocol    = "tcp"
       to_port     = 8080
@@ -198,8 +198,8 @@ security_configs = {
     ingress_rules = [{
       #cidr_blocks = ["10.0.0.0/16"]
       cidr_blocks = null
-      source_type = "Allow Frontend"
-      description = "Allow Frontend SG"
+      source_type = "BackEnd ALB"
+      description = "Allow BackEnd ALB SG"
       from_port   = 8080
       protocol    = "tcp"
       to_port     = 8080
@@ -219,9 +219,10 @@ security_configs = {
       from_port   = 80
       to_port     = 80
       protocol    = "tcp"
-      cidr_blocks = ["10.0.0.0/16"] # Public access
-      source_type = "Allow HTTP"
-      description = "Allow HTTP"
+      #cidr_blocks = ["10.0.0.0/16"] # Public access
+      cidr_blocks = null
+      source_type = "Allow ALB"
+      description = "Allow traffic from Frontend ALB"
       },
       {
         cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
@@ -247,11 +248,31 @@ security_configs = {
   backend_alb = {
     ingress_rules = [{
       cidr_blocks = null
-      source_type = "BackEnd ALB"
-      description = "BackEnd ALB"
+      source_type = "Allow Frontend"
+      description = "Allow traffic from Frontend ASG"
       from_port   = 80
       protocol    = "tcp"
       to_port     = 80
     }]
+  }
+  frontend_alb = {
+    ingress_rules = [
+      {
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"] # Open to the public internet
+        source_type = "Allow HTTP"
+        description = "Allow public HTTP traffic"
+      },
+      {
+        from_port   = 443
+        to_port     = 443
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"] # Open for secure traffic
+        source_type = "Allow HTTPS"
+        description = "Allow public HTTPS traffic"
+      }
+    ]
   }
 }

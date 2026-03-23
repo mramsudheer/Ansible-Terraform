@@ -1,7 +1,7 @@
 # 1. TIER 1: BASTION (No dependencies on other SGs)
 module "bastion_sg" {
   #source = "../../../../terraform-modules/modules/aws-sg"
-  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.7.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
@@ -12,7 +12,7 @@ module "bastion_sg" {
 }
 # 2. Create the Frontend SG separately
 module "frontend_sg" {
-  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.7.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
@@ -20,9 +20,48 @@ module "frontend_sg" {
   vpc_id         = data.aws_ssm_parameter.vpc_id.value
 
   # Frontend usually just needs HTTP/HTTPS and SSH from Bastion
-  sg_ingress_rules = var.security_configs["frontend"].ingress_rules
+  #sg_ingress_rules = var.security_configs["frontend"].ingress_rules
+  sg_ingress_rules = [
+    for rule in var.security_configs["frontend"].ingress_rules : merge(rule, {
+      source_security_group_id = (
+        rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] :
+        rule.source_type == "Allow ALB"        ? [module.frontend_alb_sg.sg_id] : 
+        []
+      )
+      cidr_blocks = rule.source_type != null ? null : rule.cidr_blocks
+    })
+  ]
 }
+# 3. Create the Backend_Alb SG separately
+module "backend_alb_sg" {
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.7.0"
+  project_name   = var.project_name
+  env            = var.env
+  common_tags    = var.common_tags
+  component_name = "backend_alb"
+  vpc_id         = data.aws_ssm_parameter.vpc_id.value
 
+  # Backend_ALB usually just needs HTTP/HTTPS and SSH from Bastion
+  #sg_ingress_rules = var.security_configs["backend_alb"].ingress_rules
+  # ADD THIS LOOP to map the "Allow Frontend" label to the actual ID
+  sg_ingress_rules = [
+    for rule in var.security_configs["backend_alb"].ingress_rules : merge(rule, {
+      source_security_group_id = rule.source_type == "Allow Frontend" ? [module.frontend_sg.sg_id] : []
+      cidr_blocks              = rule.source_type != null ? null : rule.cidr_blocks
+    })
+  ]
+}
+module "frontend_alb_sg" {
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.7.0"
+  project_name   = var.project_name
+  env            = var.env
+  common_tags    = var.common_tags
+  component_name = "frontend-alb"
+  vpc_id         = data.aws_ssm_parameter.vpc_id.value
+
+  # These rules use the public CIDRs defined in .tfvars
+  sg_ingress_rules = var.security_configs["frontend_alb"].ingress_rules
+}
 # 3. TIER 2: APP SERVERS (Depends only on Bastion)
 # This module is a factory that creates multiple Security Groups (SGs) 
 # for application tier (Catalogue, User, etc.) and automatically 
@@ -38,7 +77,7 @@ module "app_security_groups" {
   for_each = { for k, v in var.security_configs : k => v
   if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
 
-  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.3.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.7.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
@@ -59,13 +98,15 @@ module "app_security_groups" {
         # Only add Bastion if specifically requested
         rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : [],
         rule.source_type == "Allow Frontend" ? [module.frontend_sg.sg_id] : [],
+        rule.source_type == "BackEnd ALB"     ? [module.backend_alb_sg.sg_id] : [],
         # FIX: Only add Frontend SG if this is NOT an SSH rule 
         # and NOT the frontend itself
-        (rule.source_type != "SSH from Bastion" && each.key != "Allow Frontend") ? [module.frontend_sg.sg_id] : []
+        #(rule.source_type != "SSH from Bastion" && each.key != "Allow Frontend") ? [module.frontend_sg.sg_id] : []
       )
 
       # Ensure CIDR is null if we added a Security Group ID
-      cidr_blocks = (rule.source_type == "SSH from Bastion" || each.key != "Allow Frontend") ? null : rule.cidr_blocks
+      #cidr_blocks = (rule.source_type == "SSH from Bastion" || each.key != "Allow Frontend") ? null : rule.cidr_blocks
+      cidr_blocks = rule.source_type != null ? null : rule.cidr_blocks
     })
   ]
 
@@ -76,7 +117,7 @@ module "db_security_groups" {
   for_each = { for k, v in var.security_configs : k => v if k == "mongodb" || k == "mysql" || k == "redis" || k == "rabbitmq" }
 
   #source = "../../../../terraform-modules/modules/aws-sg"
-  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0..0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.7.0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
@@ -108,7 +149,18 @@ module "db_security_groups" {
     })
   ]
 }
+# This creates the "backend_alb_catalogue" type rules dynamically for all apps
+resource "aws_security_group_rule" "backend_alb_to_apps" {
+  for_each = module.app_security_groups
 
+  type                     = "ingress"
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+  description              = "Allow traffic from ${each.key} ALB"
+  security_group_id        = module.backend_alb_sg.sg_id
+  source_security_group_id = each.value.sg_id
+}
 # 5. STORE EVERYTHING IN SSM
 module "ssm" {
   source       = "../../../../terraform-modules/modules/ssm-perameters"
@@ -133,6 +185,7 @@ module "ssm" {
   sg_map = merge(
     { "bastion" = module.bastion_sg.sg_id },
     { "frontend" = module.frontend_sg.sg_id },
+    { "backend_alb" = module.backend_alb_sg.sg_id },
     { for name, instance in module.app_security_groups : name => instance.sg_id },
     { for name, instance in module.db_security_groups : name => instance.sg_id }
   )
