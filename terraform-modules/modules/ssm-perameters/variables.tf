@@ -19,6 +19,10 @@ variable "database_subnet_ids" {
 variable "igw_id" {
   type = string
 }
+variable "create_nat_ssm_params" {
+  type    = bool
+  default = false
+}
 variable "nat_gateway_id" {
   type    = string
   default = ""

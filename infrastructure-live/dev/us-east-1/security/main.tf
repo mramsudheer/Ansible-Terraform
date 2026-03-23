@@ -76,7 +76,7 @@ module "db_security_groups" {
   for_each = { for k, v in var.security_configs : k => v if k == "mongodb" || k == "mysql" || k == "redis" || k == "rabbitmq" }
 
   #source = "../../../../terraform-modules/modules/aws-sg"
-  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0.1.0"
+  source         = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-sg?ref=v0..0"
   project_name   = var.project_name
   env            = var.env
   common_tags    = var.common_tags
