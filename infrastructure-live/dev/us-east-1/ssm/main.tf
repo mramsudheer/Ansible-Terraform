@@ -16,7 +16,7 @@ module "ssm" {
   nat_gateway_id = length(data.aws_nat_gateways.all.ids) > 0 ? data.aws_nat_gateways.all.ids[0] : ""
   # If a NAT Gateway was found, get its public IP. Otherwise, send empty string.
   nat_eip_public_ip = length(data.aws_nat_gateways.all.ids) > 0 ? data.aws_nat_gateway.selected[0].public_ip : ""
-
+  sg_map            = data.terraform_remote_state.security.outputs.security_group_ids
   # Combine all 3 modules into one map and stores in SSM. 
   # SSM code(resource "aws_ssm_parameter" "sg_ids" {}) is in SSM-perameters module. 
   # sg_map = merge(
@@ -27,3 +27,9 @@ module "ssm" {
   #   { for name, instance in module.db_security_groups : name => instance.sg_id }
   # )
 }
+# resource "aws_ssm_parameter" "backend_listener_arn" {
+#   name  = "/${title(var.project_name)}/${title(var.env)}/alb/backend_listener_arn"
+#   type  = "String"
+#   value = data.terraform_remote_state.alb.outputs.backend_listener_arn
+#   description = "The ARN of the Backend ALB HTTP Listener"
+# }

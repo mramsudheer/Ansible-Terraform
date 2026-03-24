@@ -44,3 +44,9 @@ data "aws_nat_gateway" "selected" {
   count = length(data.aws_nat_gateways.all.ids) > 0 ? 1 : 0
   id    = data.aws_nat_gateways.all.ids[0]
 }
+# data "terraform_remote_state" "alb" {
+#   backend = "local"
+#   config = {
+#     path = "../backend_alb/terraform.tfstate"
+#   }
+# }

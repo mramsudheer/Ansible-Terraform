@@ -106,8 +106,8 @@ module "app_security_groups" {
     for rule in each.value.ingress_rules : merge(rule, {
       source_security_group_id = (
         rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] :
-        rule.source_type == "Allow Frontend"   ? [module.frontend_sg.sg_id] :
-        rule.source_type == "BackEnd ALB"      ? [module.backend_alb_sg.sg_id] : 
+        rule.source_type == "Allow Frontend" ? [module.frontend_sg.sg_id] :
+        rule.source_type == "BackEnd ALB" ? [module.backend_alb_sg.sg_id] :
         []
       )
       # Ensure CIDR is null if we added a Security Group ID
@@ -171,14 +171,14 @@ module "db_security_groups" {
 resource "aws_security_group_rule" "backend_alb_to_apps" {
   # Use the same filter logic you used for the app modules
   for_each = { for k, v in var.security_configs : k => v
-    if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
+  if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
 
-  type                     = "ingress"
-  from_port                = 80
-  to_port                  = 80
-  protocol                 = "tcp"
-  description              = "Allow traffic from ${each.key} SG"
-  security_group_id        = module.backend_alb_sg.sg_id
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  description       = "Allow traffic from ${each.key} SG"
+  security_group_id = module.backend_alb_sg.sg_id
   # Reference the ID directly from the created module map
   source_security_group_id = module.app_security_groups[each.key].sg_id
 }
