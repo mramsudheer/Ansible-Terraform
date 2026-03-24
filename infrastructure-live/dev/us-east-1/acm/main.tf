@@ -37,3 +37,10 @@ resource "aws_acm_certificate_validation" "cert" {
   certificate_arn         = aws_acm_certificate.cert.arn
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
+# 4. Store the Certificate ARN in SSM for the Frontend ALB to use
+resource "aws_ssm_parameter" "acm_certificate_arn" {
+  name        = "/${title(var.project_name)}/${title(var.env)}/acm/certificate_arn"
+  type        = "String"
+  value       = aws_acm_certificate.cert.arn
+  description = "The ARN of the issued ACM certificate for SSL"
+}
