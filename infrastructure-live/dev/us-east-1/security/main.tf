@@ -25,7 +25,7 @@ module "frontend_sg" {
     for rule in var.security_configs["frontend"].ingress_rules : merge(rule, {
       source_security_group_id = (
         rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] :
-        rule.source_type == "Allow ALB"        ? [module.frontend_alb_sg.sg_id] : 
+        rule.source_type == "Allow ALB" ? [module.frontend_alb_sg.sg_id] :
         []
       )
       cidr_blocks = rule.source_type != null ? null : rule.cidr_blocks
@@ -88,22 +88,28 @@ module "app_security_groups" {
   # with real AWS IDs using concat(): 
   #SSH Rule: If a rule says "SSH from Bastion", it grabs the ID from module.bastion_sg. 
   # Web Traffic: If a rule says "Allow Frontend", it grabs the ID from module.frontend_sg.
- # The "Safety Net" (The third line in concat): This logic ensures that if the rule is not 
- # for SSH, it automatically allows traffic from the Frontend SG. 
- # This is why your apps (like Catalogue) can talk to the Frontend without you hardcoding IDs.
- # SECURITY GROUPS ARE CREATING IN sg_map IN SSM MODULE.
+  # The "Safety Net" (The third line in concat): This logic ensures that if the rule is not 
+  # for SSH, it automatically allows traffic from the Frontend SG. 
+  # This is why your apps (like Catalogue) can talk to the Frontend without you hardcoding IDs.
+  # SECURITY GROUPS ARE CREATING IN sg_map IN SSM MODULE.
   sg_ingress_rules = [
+    # for rule in each.value.ingress_rules : merge(rule, {
+    #   source_security_group_id = concat(
+    #     # Only add Bastion if specifically requested
+    #     rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : [],
+    #     rule.source_type == "Allow Frontend" ? [module.frontend_sg.sg_id] : [],
+    #     rule.source_type == "BackEnd ALB" ? [module.backend_alb_sg.sg_id] : [],
+    #     # FIX: Only add Frontend SG if this is NOT an SSH rule 
+    #     # and NOT the frontend itself
+    #     #(rule.source_type != "SSH from Bastion" && each.key != "Allow Frontend") ? [module.frontend_sg.sg_id] : []
+    #   )
     for rule in each.value.ingress_rules : merge(rule, {
-      source_security_group_id = concat(
-        # Only add Bastion if specifically requested
-        rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : [],
-        rule.source_type == "Allow Frontend" ? [module.frontend_sg.sg_id] : [],
-        rule.source_type == "BackEnd ALB"     ? [module.backend_alb_sg.sg_id] : [],
-        # FIX: Only add Frontend SG if this is NOT an SSH rule 
-        # and NOT the frontend itself
-        #(rule.source_type != "SSH from Bastion" && each.key != "Allow Frontend") ? [module.frontend_sg.sg_id] : []
+      source_security_group_id = (
+        rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] :
+        rule.source_type == "Allow Frontend"   ? [module.frontend_sg.sg_id] :
+        rule.source_type == "BackEnd ALB"      ? [module.backend_alb_sg.sg_id] : 
+        []
       )
-
       # Ensure CIDR is null if we added a Security Group ID
       #cidr_blocks = (rule.source_type == "SSH from Bastion" || each.key != "Allow Frontend") ? null : rule.cidr_blocks
       cidr_blocks = rule.source_type != null ? null : rule.cidr_blocks
@@ -135,7 +141,7 @@ module "db_security_groups" {
 
   sg_ingress_rules = [
     for rule in each.value.ingress_rules : merge(rule, {
-      
+
       source_security_group_id = rule.source_type == "SSH from Bastion" ? [module.bastion_sg.sg_id] : (
         rule.source_type == "FROM_CATALOGUE" ? [module.app_security_groups["catalogue"].sg_id] :
         rule.source_type == "FROM_USER" ? [module.app_security_groups["user"].sg_id] :
@@ -150,43 +156,59 @@ module "db_security_groups" {
   ]
 }
 # This creates the "backend_alb_catalogue" type rules dynamically for all apps
+# resource "aws_security_group_rule" "backend_alb_to_apps" {
+#   for_each = module.app_security_groups
+
+#   type                     = "ingress"
+#   from_port                = 80
+#   to_port                  = 80
+#   protocol                 = "tcp"
+#   description              = "Allow traffic from ${each.key} ALB"
+#   security_group_id        = module.backend_alb_sg.sg_id
+#   source_security_group_id = each.value.sg_id
+# }
+# This creates the rules dynamically for all apps to talk to the ALB
 resource "aws_security_group_rule" "backend_alb_to_apps" {
-  for_each = module.app_security_groups
+  # Use the same filter logic you used for the app modules
+  for_each = { for k, v in var.security_configs : k => v
+    if k == "catalogue" || k == "user" || k == "shipping" || k == "payment" || k == "cart" }
 
   type                     = "ingress"
   from_port                = 80
   to_port                  = 80
   protocol                 = "tcp"
-  description              = "Allow traffic from ${each.key} ALB"
+  description              = "Allow traffic from ${each.key} SG"
   security_group_id        = module.backend_alb_sg.sg_id
-  source_security_group_id = each.value.sg_id
+  # Reference the ID directly from the created module map
+  source_security_group_id = module.app_security_groups[each.key].sg_id
 }
-# 5. STORE EVERYTHING IN SSM
-module "ssm" {
-  source       = "../../../../terraform-modules/modules/ssm-perameters"
-  project_name = var.project_name
-  environment  = var.env
 
-  # Use .value directly (don't split here, keep the whole string/list)
-  vpc_id              = data.aws_ssm_parameter.vpc_id.value
-  public_subnet_ids   = split(",", data.aws_ssm_parameter.public_subnet_ids.value)
-  private_subnet_ids  = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
-  database_subnet_ids = split(",", data.aws_ssm_parameter.database_subnet_ids.value)
+# # 5. STORE EVERYTHING IN SSM
+# module "ssm" {
+#   source       = "../../../../terraform-modules/modules/ssm-perameters"
+#   project_name = var.project_name
+#   environment  = var.env
 
-  # Use the ID from the IGW search
-  igw_id = data.aws_internet_gateway.default.internet_gateway_id
-  # Logic: If the list of NAT Gateways is not empty, take the first one. Otherwise, ""
-  nat_gateway_id = length(data.aws_nat_gateways.all.ids) > 0 ? data.aws_nat_gateways.all.ids[0] : ""
-  # If a NAT Gateway was found, get its public IP. Otherwise, send empty string.
-  nat_eip_public_ip = length(data.aws_nat_gateways.all.ids) > 0 ? data.aws_nat_gateway.selected[0].public_ip : ""
+#   # Use .value directly (don't split here, keep the whole string/list)
+#   vpc_id              = data.aws_ssm_parameter.vpc_id.value
+#   public_subnet_ids   = split(",", data.aws_ssm_parameter.public_subnet_ids.value)
+#   private_subnet_ids  = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
+#   database_subnet_ids = split(",", data.aws_ssm_parameter.database_subnet_ids.value)
 
-  # Combine all 3 modules into one map and stores in SSM. 
-  # SSM code(resource "aws_ssm_parameter" "sg_ids" {}) is in SSM-perameters module. 
-  sg_map = merge(
-    { "bastion" = module.bastion_sg.sg_id },
-    { "frontend" = module.frontend_sg.sg_id },
-    { "backend_alb" = module.backend_alb_sg.sg_id },
-    { for name, instance in module.app_security_groups : name => instance.sg_id },
-    { for name, instance in module.db_security_groups : name => instance.sg_id }
-  )
-}
+#   # Use the ID from the IGW search
+#   igw_id = data.aws_internet_gateway.default.internet_gateway_id
+#   # Logic: If the list of NAT Gateways is not empty, take the first one. Otherwise, ""
+#   nat_gateway_id = length(data.aws_nat_gateways.all.ids) > 0 ? data.aws_nat_gateways.all.ids[0] : ""
+#   # If a NAT Gateway was found, get its public IP. Otherwise, send empty string.
+#   nat_eip_public_ip = length(data.aws_nat_gateways.all.ids) > 0 ? data.aws_nat_gateway.selected[0].public_ip : ""
+
+#   # Combine all 3 modules into one map and stores in SSM. 
+#   # SSM code(resource "aws_ssm_parameter" "sg_ids" {}) is in SSM-perameters module. 
+#   # sg_map = merge(
+#   #   { "bastion" = module.bastion_sg.sg_id },
+#   #   { "frontend" = module.frontend_sg.sg_id },
+#   #   { "backend_alb" = module.backend_alb_sg.sg_id },
+#   #   { for name, instance in module.app_security_groups : name => instance.sg_id },
+#   #   { for name, instance in module.db_security_groups : name => instance.sg_id }
+#   # )
+# }

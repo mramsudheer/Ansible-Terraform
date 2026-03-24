@@ -216,9 +216,9 @@ security_configs = {
   }
   frontend = {
     ingress_rules = [{
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
+      from_port = 80
+      to_port   = 80
+      protocol  = "tcp"
       #cidr_blocks = ["10.0.0.0/16"] # Public access
       cidr_blocks = null
       source_type = "Allow ALB"
