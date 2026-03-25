@@ -24,7 +24,7 @@ variable "private_subnet_cidrs" {
   description = "List of CIDR blocks for private subnets"
 }
 variable "project_name" {
-  type = string
+  type    = string
   default = "Roboshop"
 }
 variable "envinronment" {
@@ -36,7 +36,7 @@ variable "envinronment" {
 #   default     = {}
 # }
 variable "domain_name" {
-    type = string
+  type    = string
   default = "intellifind.store"
 }
 

@@ -24,10 +24,10 @@ variable "ami_name" {
 #   description = "List of CIDR blocks for public subnets"
 # }
 # FOR PRIVATE SUBNET
-variable "private_subnet_ids" {
-  type        = list(string)
-  description = "List of private subnet IDs"
-}
+# variable "private_subnet_ids" {
+#   type        = list(string)
+#   description = "List of private subnet IDs"
+# }
 # FOR DATABASE SUBNET
 # variable "database_subnet_cidrs" {
 #   type        = list(string)
