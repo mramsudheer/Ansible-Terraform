@@ -1,20 +1,22 @@
 # FOR VPC CIDR
-variable "vpc_cidr" {
-  type        = string
-  description = "The CIDR Block for VPC"
-}
+# variable "vpc_cidr" {
+#   type        = string
+#   description = "The CIDR Block for VPC"
+# }
 variable "instance_type" {
   type    = string
   default = "t3.micro"
 }
-variable "region" {
-  type = string
-}
+# variable "region" {
+#   type = string
+# }
 variable "owner_id" {
   type = string
+  default = "973714476881"
 }
 variable "ami_name" {
   type = string
+  default = "Redhat-9-DevOps-Practice"
 }
 # For PUBLIC SUBNET
 # variable "public_subnet_cidrs" {
@@ -22,9 +24,9 @@ variable "ami_name" {
 #   description = "List of CIDR blocks for public subnets"
 # }
 # FOR PRIVATE SUBNET
-variable "private_subnet_cidrs" {
+variable "private_subnet_ids" {
   type        = list(string)
-  description = "List of CIDR blocks for private subnets"
+  description = "List of private subnet IDs"
 }
 # FOR DATABASE SUBNET
 # variable "database_subnet_cidrs" {
@@ -47,6 +49,7 @@ variable "private_subnet_cidrs" {
 # }
 variable "project_name" {
   type = string
+  default = "Roboshop"
 }
 variable "environment" {
   type = string
@@ -73,6 +76,7 @@ variable "domain_name" {
 
 variable "hosted_zone_id" {
   type = string
+  default = "Z0966494EBSLUZZZRGB4"
 }
 # variable "hosted_zone_name" {
 #   type = string
