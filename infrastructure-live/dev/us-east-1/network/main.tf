@@ -1,7 +1,7 @@
 module "vpc" {
   # Relative path to your module logic
   #source = "../../../../terraform-modules/modules/aws-vpc"
-  source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-vpc?ref=v1.5.0"
+  source = "git::https://github.com/mramsudheer/Ansible-Terraform.git//terraform-modules/modules/aws-vpc?ref=v1.6.0"
   # Passing values from variables (defined in your tfvars)
 
   vpc_cidr              = var.vpc_cidr
@@ -21,13 +21,13 @@ module "ssm" {
   environment  = var.environment
 
   # Connecting the modules
-  vpc_id              = module.vpc.vpc_id
-  public_subnet_ids   = module.vpc.public_subnet_ids
-  private_subnet_ids  = module.vpc.private_subnet_ids
-  database_subnet_ids = module.vpc.database_subnet_ids
-  igw_id              = module.vpc.igw_id
+  vpc_id                = module.vpc.vpc_id
+  public_subnet_ids     = module.vpc.public_subnet_ids
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  database_subnet_ids   = module.vpc.database_subnet_ids
+  igw_id                = module.vpc.igw_id
   create_nat_ssm_params = var.nat_gateway_enable
-  nat_eip_public_ip   = module.vpc.nat_eip_public_ip
-  nat_gateway_id      = module.vpc.nat_gateway_id
+  nat_eip_public_ip     = module.vpc.nat_eip_public_ip
+  nat_gateway_id        = module.vpc.nat_gateway_id
   #sg_map = { for name, instance in module.security_groups : name => instance.sg_id }
 }
