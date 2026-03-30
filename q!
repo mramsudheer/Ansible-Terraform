@@ -1,0 +1,13 @@
+[1mdiff --git a/infrastructure-live/dev/us-east-1/frontend/main.tf b/infrastructure-live/dev/us-east-1/frontend/main.tf[m
+[1mindex ee2bdb5..3d06e30 100644[m
+[1m--- a/infrastructure-live/dev/us-east-1/frontend/main.tf[m
+[1m+++ b/infrastructure-live/dev/us-east-1/frontend/main.tf[m
+[36m@@ -66,7 +66,7 @@[m [mresource "aws_lb_listener_rule" "frontend" {[m
+ [m
+   condition {[m
+     host_header {[m
+[31m-      values = ["dev.${var.domain_name}"][m
+[32m+[m[32m      values = ["dev.${var.domain_name}","frontend-dev.${var.domain_name}"][m[41m[m
+     }[m
+   }[m
+ }[m

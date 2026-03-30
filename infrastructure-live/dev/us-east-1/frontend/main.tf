@@ -66,7 +66,7 @@ resource "aws_lb_listener_rule" "frontend" {
 
   condition {
     host_header {
-      values = ["dev.${var.domain_name}"]
+      values = ["dev.${var.domain_name}","frontend-dev.${var.domain_name}"]
     }
   }
 }
