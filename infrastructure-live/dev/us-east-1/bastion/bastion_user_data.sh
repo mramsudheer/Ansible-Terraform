@@ -6,7 +6,7 @@ sudo growpart /dev/nvme0n1 4
 sudo pvresize /dev/nvme0n1p4
 sudo lvextend -l +100%FREE /dev/mapper/RootVG-rootVol
 sudo xfs_growfs /
-
+sleep 10
 # --- 2. INSTALL TOOLS ---
 sudo dnf install git -y
 
