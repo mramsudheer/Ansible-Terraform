@@ -6,6 +6,9 @@ resource "aws_vpc" "main" {
   tags = merge(var.common_tags, {
     Name = "${var.project_name}-${var.environment}-vpc"
   })
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 resource "aws_subnet" "public" {
   count                   = length(var.public_subnet_cidrs)
@@ -17,6 +20,9 @@ resource "aws_subnet" "public" {
   tags = merge(var.common_tags, {
     Name = "${var.project_name}-${var.environment}-public-subnet-${count.index}"
   })
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 resource "aws_subnet" "private" {
   count             = length(var.private_subnet_cidrs)
@@ -27,6 +33,9 @@ resource "aws_subnet" "private" {
   tags = merge(var.common_tags, {
     Name = "${var.project_name}-${var.environment}-private-subnet-${count.index}"
   })
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 resource "aws_subnet" "database" {
   count             = length(var.database_subnet_cidrs)
@@ -37,6 +46,9 @@ resource "aws_subnet" "database" {
   tags = merge(var.common_tags, {
     Name = "${var.project_name}-${var.environment}-database-subnet-${count.index}"
   })
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 # Creating Internet Gateway
 resource "aws_internet_gateway" "igw" {
@@ -54,6 +66,9 @@ resource "aws_route_table" "public" {
     #Gateway = aws_internet_gateway.igw.id
   }
   tags = merge(var.common_tags, { Name = "${var.project_name}-${var.environment}-public-rt" })
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 #Public route
 # resource "aws_route" "public" {
@@ -105,6 +120,9 @@ resource "aws_route_table" "private" {
     }
   }
   tags = merge(var.common_tags, { Name = "${var.project_name}-${var.environment}-private-rt" })
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 # #Private route
 # resource "aws_route" "private" {
@@ -135,6 +153,9 @@ resource "aws_route_table" "database" {
     }
   }
   tags = merge(var.common_tags, { Name = "${var.project_name}-${var.environment}-database-rt" })
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 # #Database route
 # resource "aws_route" "database" {
