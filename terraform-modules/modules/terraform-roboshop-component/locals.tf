@@ -9,7 +9,7 @@ locals {
   backend_alb_listener_arn = data.aws_ssm_parameter.backend_alb_listener_arn.value
   frontend_listener_arn    = data.aws_ssm_parameter.frontend_listener_arn.value
   alb_listener_arn         = var.component == "frontend" ? data.aws_ssm_parameter.frontend_listener_arn.value : data.aws_ssm_parameter.backend_alb_listener_arn.value
-  host_header              = var.component == "frontend" ? "${var.component}-${var.environment}.${var.domain_name}" : "${var.component}.backend-alb-${var.environment}.${var.domain_name}"
+  host_header              = var.component == "frontend" ? "${var.component}-${lower(var.environment)}.${var.domain_name}" : "${var.component}.backend-alb-${lower(var.environment)}.${var.domain_name}"
 
   common_tags = merge(
 

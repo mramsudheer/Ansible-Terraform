@@ -18,9 +18,8 @@ security_configs = {
       protocol    = "tcp"
       to_port     = 27017
       },
-      {
+      { # MONGODB TO ALLOW REQUESTS FROM CATALOGUE
         cidr_blocks = null # Logic in main.tf will swap this for Catalogue/User IDs
-        #ALLOW ONLY CATALOGUE
         #source_security_group_id = [module.security_groups["catalogue"].sg_id]
         source_type = "FROM_USER"
         description = "Allow User SG"
@@ -28,9 +27,17 @@ security_configs = {
         protocol    = "tcp"
         to_port     = 27017
       },
-      {
+      {  # MONGODB TO ALLOW REQUESTS FROM CART
+        cidr_blocks = null # Logic in main.tf will swap this for Catalogue/User IDs
+        #source_security_group_id = [module.security_groups["catalogue"].sg_id]
+        source_type = "FROM_CART"
+        description = "Allow Cart SG"
+        from_port   = 27017
+        protocol    = "tcp"
+        to_port     = 27017
+      },
+      { # MONGODB TO ALLOW REQUESTS FROM BASTION
         cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
-        #ALLOW ONLY BASTION
         #source_security_group_id = [module.bastion_sg.sg_id]
         source_type = "SSH from Bastion"
         description = "Allow Bastion SG"
@@ -49,7 +56,7 @@ security_configs = {
       protocol    = "tcp"
       to_port     = 6379
       },
-      {
+      { # REDIS TO ALLOW REQUESTS FROM USER
         cidr_blocks = null # Logic in main.tf will swap this for User and Cart IDs
         source_type = "FROM_USER"
         description = "Allow User SG"
@@ -57,7 +64,7 @@ security_configs = {
         protocol    = "tcp"
         to_port     = 6379
       },
-      {
+      { # REDIS TO ALLOW REQUESTS FROM CART
         cidr_blocks = null # Logic in main.tf will swap this for User and Cart IDs
         source_type = "FROM_CART"
         description = "Allow Cart SG"
@@ -65,7 +72,7 @@ security_configs = {
         protocol    = "tcp"
         to_port     = 6379
       },
-      {
+      { # REDIS TO ALLOW REQUESTS FROM BASTION
         cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
         source_type = "SSH from Bastion"
         description = "Allow Bastion SG"
@@ -76,7 +83,8 @@ security_configs = {
     }]
   }
   mysql = {
-    ingress_rules = [{
+    ingress_rules = [
+      { # MYSQL TO ALLOW REQUESTS FROM SHIPPING
       cidr_blocks = null # Logic in main.tf will swap this for shipping ID
       source_type = "FROM_SHIPPING"
       description = "Allow Shipping SG"
@@ -84,7 +92,7 @@ security_configs = {
       protocol    = "tcp"
       to_port     = 3306
       },
-      {
+      { # MYSQL TO ALLOW REQUESTS FROM BASTION
         cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
         source_type = "SSH from Bastion"
         description = "Allow Bastion SG"
@@ -95,7 +103,8 @@ security_configs = {
     }]
   }
   rabbitmq = {
-    ingress_rules = [{
+    ingress_rules = [
+      { # RABBITMQ TO ALLOW REQUESTS FROM PAYMENT
       cidr_blocks = null # Logic in main.tf will swap this for Payment ID
       source_type = "FROM_PAYMENT"
       description = "Allow Payment SG"
@@ -103,7 +112,7 @@ security_configs = {
       protocol    = "tcp"
       to_port     = 5672
       },
-      {
+      { # RABBITMQ TO ALLOW REQUESTS FROM BASTION
         cidr_blocks = null # Logic in main.tf will swap this for Bastion ID
         source_type = "SSH from Bastion"
         description = "Allow Bastion SG"

@@ -5,7 +5,7 @@ set -e
 #source /c/DevOps_Practice_Code/aws_keys.sh
 
 ROOT_PATH="/GitFiles/Ansible-Terraform/infrastructure-live/dev/us-east-1"
-ALL_COMPONENTS=("databases" "acm" "backend_alb" "frontend-alb" "ssm" "components", "frontend")
+ALL_COMPONENTS=("databases" "acm" "backend_alb" "frontend-alb" "ssm" "components" "frontend")
 
 ACTION=$1
 shift 
